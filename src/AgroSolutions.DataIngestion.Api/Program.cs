@@ -28,7 +28,7 @@ builder.Host.UseSerilog();
 // ========================================
 // Configurar OpenTelemetry (Metrics, Traces, Logs)
 // ========================================
-builder.Services.AddOpenTelemetryConfiguration(builder.Configuration);
+builder.Services.AddOpenTelemetryConfiguration();
 builder.Logging.AddOpenTelemetryLogging(builder.Configuration);
 
 // ========================================

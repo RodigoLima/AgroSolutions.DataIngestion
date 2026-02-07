@@ -7,7 +7,9 @@ namespace AgroSolutions.DataIngestion.Application.Telemetry;
 /// </summary>
 public static class SensorActivitySource
 {
-    public static readonly ActivitySource Source = new("AgroSolutions.DataIngestion.Api", "1.0.0");
+    public const string ServiceName = "AgroSolutions.DataIngestion.Api";
+    public const string ServiceVersion = "1.0.0";
+    public static readonly ActivitySource Source = new(ServiceName, ServiceVersion);
 
     public const string SensorDataIngestion = "sensor.data.ingestion";
     public const string SensorDataValidation = "sensor.data.validation";

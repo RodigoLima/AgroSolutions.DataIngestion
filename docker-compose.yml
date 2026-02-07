@@ -1,4 +1,81 @@
 services:
+  sensor-ingestion-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sensor-ingestion-api
+    ports:
+      - "5000:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: ${ASPNETCORE_URLS}
+      RabbitMQ__Host: ${RABBITMQ_HOST}
+      RabbitMQ__Port: ${RABBITMQ_PORT}
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sensor-network
+
+  worker:
+    image: agro-solutions-medicoes
+    container_name: medicoes-worker
+    restart: unless-stopped
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__DefaultConnection: >
+        Host=${DB_HOST};
+        Port=${DB_PORT};
+        Database=${DB_NAME};
+        Username=${DB_USER};
+        Password=${DB_PASSWORD}
+
+      RabbitMq__Host: ${RABBITMQ_HOST}
+      RabbitMq__Port: ${RABBITMQ_PORT}
+      RabbitMq__Username: ${RABBITMQ_USER}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD}
+
+      Email__Host: ${EMAIL_HOST}
+      Email__Port: ${EMAIL_PORT}
+      Email__UseSsl: ${EMAIL_USE_SSL}
+      Email__From: ${EMAIL_FROM}
+
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - sensor-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sensor-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U {$DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: sensor-rabbitmq
@@ -6,8 +83,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
@@ -18,59 +95,29 @@ services:
       timeout: 5s
       retries: 5
 
-  sensor-ingestion-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: sensor-ingestion-api
-    ports:
-      - "5000:80"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80
-      - RabbitMQ__Host=rabbitmq
-      - RabbitMQ__Port=5672
-      - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - sensor-network
-
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.91.0
-    container_name: sensor-otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: sensor-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./tempo-config.yaml:/etc/tempo.yaml
+      - tempo-data:/tmp/tempo
     ports:
-      - "4317:4317"    # OTLP gRPC receiver
-      - "4318:4318"    # OTLP HTTP receiver
-      - "8888:8888"    # Prometheus metrics exposed by the collector
-      - "8889:8889"    # Prometheus exporter metrics
+      - "3200:3200"   # Tempo UI
     networks:
       - sensor-network
 
-  # Grafana - Visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: sensor-grafana
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: sensor-loki
+    command: -config.file=/etc/loki/local-config.yaml
     ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - "3100:3100"   # Loki API
     volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - loki-data:/loki
     networks:
       - sensor-network
-    depends_on:
-      - prometheus
 
-  # Prometheus - Metrics Collection
   prometheus:
     image: prom/prometheus:v2.48.1
     container_name: sensor-prometheus
@@ -86,8 +133,48 @@ services:
     networks:
       - sensor-network
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sensor-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - sensor-network
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: sensor-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"    # OTLP gRPC receiver
+      - "4318:4318"    # OTLP HTTP receiver
+      - "8888:8888"    # Prometheus metrics exposed by the collector
+      - "8889:8889"    # Prometheus exporter metrics
+    networks:
+      - sensor-network
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+
 volumes:
   rabbitmq-data:
+  postgres-data:
+  tempo-data:
+  loki-data:
   prometheus-data:
   grafana-data:
 

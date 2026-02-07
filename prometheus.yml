@@ -1,23 +1,34 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: docker-compose
+    environment: development
 
 scrape_configs:
-  # Prometheus itself
-  - job_name: 'prometheus'
+  # ================= PROMETHEUS =================
+  - job_name: prometheus
     static_configs:
       - targets: ['localhost:9090']
 
-  # Sensor Data Ingestion API
-  - job_name: 'sensor-ingestion-api'
-    metrics_path: '/metrics'
-    static_configs:
-      # - targets: ['host.docker.internal:5000']
-    # Se estiver rodando no Linux, use:
-      - targets: ['172.17.0.1:5000']
-
-  # OpenTelemetry Collector (se estiver usando)
-  - job_name: 'otel-collector'
+  # ================= OTEL COLLECTOR (INTERNAL METRICS) =================
+  - job_name: otel-collector
+    honor_labels: true
     static_configs:
       - targets: ['otel-collector:8888']
+
+  # ================= APPLICATION METRICS (VIA OTEL) =================
+  - job_name: api-data-ingestion
+    honor_labels: true
+    static_configs:
       - targets: ['otel-collector:8889']
+
+  # ================= TEMPO =================
+  - job_name: tempo
+    static_configs:
+      - targets: ['tempo:3200']
+
+  # ================= LOKI =================
+  - job_name: loki
+    static_configs:
+      - targets: ['loki:3100']

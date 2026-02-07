@@ -1,3 +1,4 @@
+using AgroSolutions.DataIngestion.Application.Telemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -8,18 +9,13 @@ namespace AgroSolutions.DataIngestion.Api.Configuration;
 public static class OpenTelemetryConfiguration
 {
     public static IServiceCollection AddOpenTelemetryConfiguration(
-        this IServiceCollection services,
-        IConfiguration configuration)
+        this IServiceCollection services)
     {
-        var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "AgroSolutions.DataIngestion";
-        var serviceVersion = configuration["OpenTelemetry:ServiceVersion"] ?? "1.0.0";
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317";
-
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService(
-                    serviceName: serviceName,
-                    serviceVersion: serviceVersion,
+                    serviceName: SensorActivitySource.ServiceName,
+                    serviceVersion: SensorActivitySource.ServiceVersion,
                     serviceInstanceId: Environment.MachineName))
             .WithTracing(tracing => tracing
                 .AddAspNetCoreInstrumentation(options =>
@@ -34,22 +30,16 @@ public static class OpenTelemetryConfiguration
                 .AddHttpClientInstrumentation()
                 .AddSource("MassTransit")
                 .AddSource("SensorDataIngestion.*")
-                .AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(otlpEndpoint);
-                })
-                .AddConsoleExporter()) // Para debug local
+                .AddOtlpExporter())
+                // .AddConsoleExporter()) // Para debug local
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
                 .AddMeter("MassTransit")
                 .AddMeter("SensorDataIngestion.*")
-                .AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(otlpEndpoint);
-                })
-                .AddConsoleExporter()); // Para debug local
+                .AddOtlpExporter());
+                // .AddConsoleExporter()); // Para debug local
 
         return services;
     }
@@ -65,12 +55,9 @@ public static class OpenTelemetryConfiguration
             options.IncludeScopes = true;
             options.IncludeFormattedMessage = true;
             
-            options.AddOtlpExporter(otlpOptions =>
-            {
-                otlpOptions.Endpoint = new Uri(otlpEndpoint);
-            });
+            options.AddOtlpExporter();
             
-            options.AddConsoleExporter(); // Para debug local
+            // options.AddConsoleExporter(); // Para debug local
         });
 
         return logging;

@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'Sensor Data Ingestion Dashboards'
+    orgId: 1
+    folder: 'Sensor Data'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true
