@@ -21,6 +21,7 @@ exporters:
   # Exporter Prometheus (métricas)
   prometheus:
     endpoint: 0.0.0.0:8889
+    namespace: sensor_data_ingestion
     resource_to_telemetry_conversion:
       enabled: true
 

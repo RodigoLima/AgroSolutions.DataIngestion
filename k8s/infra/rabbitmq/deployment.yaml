@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: sensor-ingestion
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management-alpine
+          ports:
+            - name: amqp
+              containerPort: 5672
+              protocol: TCP
+            - name: management
+              containerPort: 15672
+              protocol: TCP
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "admin"
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: sensor-api-secret
+                  key: RabbitMQ__Password
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+
+          livenessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 120
+            periodSeconds: 20
+
+          readinessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 40
+            periodSeconds: 10
+
+          volumeMounts:
+            - name: rabbitmq-config
+              mountPath: /etc/rabbitmq
+      volumes:
+        - name: rabbitmq-config
+          configMap:
+            name: rabbitmq-config

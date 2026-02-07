@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-api
+  namespace: sensor-ingestion
+  labels:
+    app: sensor-api
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-api
+  template:
+    metadata:
+      labels:
+        app: sensor-api
+        version: v1
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z rabbitmq-service 5672; do
+                echo "⏳ Aguardando RabbitMQ..."
+                sleep 2
+              done
+      containers:
+        - name: sensor-api
+          image: sensor-ingestion-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: DOTNET_GC_SERVER
+              value: "0"
+
+          envFrom:
+            - secretRef:
+                name: sensor-api-secret
+
+            - configMapRef:
+                name: sensor-api-config
+          
+          resources:
+            requests:
+              memory: "96Mi"
+              cpu: "100m"
+            limits:
+              memory: "192Mi"
+              cpu: "250m"
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

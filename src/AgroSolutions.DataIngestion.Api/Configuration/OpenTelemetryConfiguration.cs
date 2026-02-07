@@ -45,11 +45,8 @@ public static class OpenTelemetryConfiguration
     }
 
     public static ILoggingBuilder AddOpenTelemetryLogging(
-        this ILoggingBuilder logging,
-        IConfiguration configuration)
+        this ILoggingBuilder logging)
     {
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317";
-
         logging.AddOpenTelemetry(options =>
         {
             options.IncludeScopes = true;

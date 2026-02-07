@@ -6,30 +6,41 @@ using AgroSolutions.DataIngestion.Application.DTOs;
 using AgroSolutions.DataIngestion.Application.Interfaces;
 using AgroSolutions.DataIngestion.Application.Validators;
 using AgroSolutions.DataIngestion.Application.Services;
-using Microsoft.OpenApi.Models;
 using AgroSolutions.DataIngestion.Api.Middlewares;
 using AgroSolutions.DataIngestion.Api.Configuration;
 using AgroSolutions.DataIngestion.Application.Telemetry;
+using Serilog.Sinks.OpenTelemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ========================================
 // Configurar Serilog
 // ========================================
+var otelEndpoint =
+    Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+    ?? "http://localhost:4318";
+
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .Enrich.WithProperty("ServiceName", "SensorDataIngestionAPI")
     .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
+    .WriteTo.OpenTelemetry(op =>
+    {
+        op.Endpoint = otelEndpoint;
+        op.Protocol = OtlpProtocol.HttpProtobuf;
+    })
     .CreateLogger();
 
+builder.Logging.ClearProviders();
 builder.Host.UseSerilog();
 
 // ========================================
 // Configurar OpenTelemetry (Metrics, Traces, Logs)
 // ========================================
 builder.Services.AddOpenTelemetryConfiguration();
-builder.Logging.AddOpenTelemetryLogging(builder.Configuration);
+// builder.Logging.AddOpenTelemetryLogging();
 
 // ========================================
 // Registrar Métricas Customizadas
@@ -133,14 +144,20 @@ var app = builder.Build();
 // Configurar Pipeline
 // ========================================
 
-if (app.Environment.IsDevelopment())
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI(c =>
+//     {
+//         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sensor Data Ingestion API v1");
+//     });
+// }
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sensor Data Ingestion API v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sensor Data Ingestion API v1");
+});
 
 app.UseSerilogRequestLogging(options =>
 {
