@@ -31,11 +31,11 @@ spec:
               value: "tempoSearch,tempoBackendSearch"
           resources:
             requests:
-              memory: "96Mi"
-              cpu: "50m"
+              memory: "256Mi"
+              cpu: "100m"
             limits:
-              memory: "192Mi"
-              cpu: "200m"
+              memory: "512Mi"
+              cpu: "500m"
           volumeMounts:
             - name: grafana-datasources
               mountPath: /etc/grafana/provisioning/datasources

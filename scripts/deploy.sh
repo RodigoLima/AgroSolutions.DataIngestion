@@ -55,10 +55,10 @@ echo ""
 # 2. Criar cluster Kind (se não existir)
 print_info "Verificando cluster Kind..."
 
-if kind get clusters | grep -q "sensor-data-cluster"; then
-    print_info "Cluster 'sensor-data-cluster' já existe."
+if kind get clusters | grep -q "agro-dev"; then
+    print_info "Cluster 'agro-dev' já existe."
 else
-    print_info "Criando cluster Kind..."
+    print_info "Criando cluster Kind agro-dev..."
     kind create cluster --config "$ROOT_DIR"/k8s/kind/config.yaml
 fi
 
@@ -76,13 +76,13 @@ cd ..
 docker build -t sensor-ingestion-api:latest "$ROOT_DIR"
 
 print_info "Carregando imagem no Kind..."
-kind load docker-image sensor-ingestion-api:latest --name sensor-data-cluster
+kind load docker-image sensor-ingestion-api:latest --name agro-dev
 
 echo ""
 
 # 4. Deploy dos manifestos Kubernetes
 print_info "Aplicando manifestos Kubernetes..."
-cd k8s
+cd "$ROOT_DIR/k8s"
 
 kubectl apply -f "$ROOT_DIR"/k8s/namespaces.yaml
 sleep 2
@@ -131,8 +131,8 @@ echo "================================================"
 echo ""
 echo "URLs de Acesso:"
 echo "  🌐 API:             http://localhost:5000"
-echo "  📊 Grafana:         http://localhost:3000 (admin/admin)"
-echo "  📈 Prometheus:      http://localhost:9090"
+echo "  📊 Grafana:         http://localhost:30300 (admin/admin)"
+echo "  📈 Prometheus:      http://localhost:30900"
 echo "  🐰 RabbitMQ:        http://localhost:15672 (admin/admin123)"
 echo ""
 echo "Comandos úteis:"

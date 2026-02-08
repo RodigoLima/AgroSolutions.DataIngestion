@@ -1,27 +1,37 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: sensor-data-cluster
+name: agro-dev
 
 nodes:
   - role: control-plane
     extraPortMappings:
-      # API
       - containerPort: 30080
+        hostPort: 30080
+      - containerPort: 30081
+        hostPort: 30081
+      - containerPort: 30032
+        hostPort: 30032
+      - containerPort: 30033
+        hostPort: 30033
+      - containerPort: 5000
         hostPort: 5000
-        protocol: TCP
-      # Grafana
+      - containerPort: 30380
+        hostPort: 30380
+      - containerPort: 30980
+        hostPort: 30980
+      - containerPort: 30381
+        hostPort: 30381
+      - containerPort: 30981
+        hostPort: 30981
       - containerPort: 30300
-        hostPort: 3000
-        protocol: TCP
-      # Prometheus
+        hostPort: 30300
       - containerPort: 30900
-        hostPort: 9090
-        protocol: TCP
-      # RabbitMQ
-      - containerPort: 30672
+        hostPort: 30900
+      - containerPort: 30000
+        hostPort: 30000
+      - containerPort: 30902
+        hostPort: 30902
+      - containerPort: 5672
         hostPort: 5672
-        protocol: TCP
-      # RabbitMQ Management
-      - containerPort: 31567
+      - containerPort: 15672
         hostPort: 15672
-        protocol: TCP

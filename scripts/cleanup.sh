@@ -15,7 +15,7 @@ kubectl delete namespace sensor-ingestion --ignore-not-found=true
 echo ""
 echo "Excluíndo Cluster Kind..."
 
-kind delete cluster --name sensor-data-cluster
+kind delete cluster --name agro-dev
 echo "✅ Cluster deletado"
 
 echo ""
