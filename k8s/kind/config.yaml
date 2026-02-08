@@ -43,4 +43,3 @@ nodes:
         hostPort: 30980
       - containerPort: 30981
         hostPort: 30981
-  - role: worker

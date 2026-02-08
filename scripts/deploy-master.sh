@@ -17,12 +17,19 @@ esac
 echo "================================================"
 echo "  Deploy Master - Todos os microserviços (Kind)"
 echo "================================================"
+echo "  Cluster único: agro-dev (todos os serviços no mesmo cluster)"
 [ -n "${SKIP_BUILD:-}" ] && echo "  (modo --no-build: só K8s, sem build; waits curtos)"
 echo ""
 
 command -v kind >/dev/null 2>&1 || { echo "Kind não instalado."; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl não instalado."; exit 1; }
 command -v docker >/dev/null 2>&1 || { echo "Docker não instalado."; exit 1; }
+
+if ! kind get clusters 2>/dev/null | grep -q "^agro-dev$"; then
+  echo "Cluster agro-dev ainda não existe; será criado no 1º deploy."
+elif [ "$(kubectl config current-context 2>/dev/null)" != "kind-agro-dev" ]; then
+  kubectl config use-context kind-agro-dev 2>/dev/null || true
+fi
 
 run() {
   local dir="$1"
@@ -61,5 +68,6 @@ echo "  Grafana:        http://localhost:30300 | 30380 | 30381 (admin/admin)"
 echo "  Prometheus:     http://localhost:30900 | 30980 | 30981"
 echo "  Mailpit:        http://localhost:30025 (Medicoes)"
 echo ""
+echo "Cluster único agro-dev — namespaces: sensor-ingestion | identityservice | property-service | agro-medicoes"
 echo "Se alguma URL não abrir, recrie o cluster: kind delete cluster --name agro-dev && ./deploy-master.sh"
 echo ""
