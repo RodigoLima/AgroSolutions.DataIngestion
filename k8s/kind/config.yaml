@@ -35,6 +35,10 @@ nodes:
         hostPort: 5672
       - containerPort: 31567
         hostPort: 15672
+      - containerPort: 30673
+        hostPort: 30673
+      - containerPort: 31673
+        hostPort: 31673
       - containerPort: 30900
         hostPort: 30900
       - containerPort: 30902
