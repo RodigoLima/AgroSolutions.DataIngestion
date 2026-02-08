@@ -55,7 +55,8 @@ spec:
 
           volumeMounts:
             - name: rabbitmq-config
-              mountPath: /etc/rabbitmq
+              mountPath: /etc/rabbitmq/rabbitmq.conf
+              subPath: rabbitmq.conf
       volumes:
         - name: rabbitmq-config
           configMap:
