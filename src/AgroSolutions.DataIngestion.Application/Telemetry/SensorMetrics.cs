@@ -1,11 +1,12 @@
 using System.Diagnostics.Metrics;
+using AgroSolutions.DataIngestion.Application.Interfaces;
 
 namespace AgroSolutions.DataIngestion.Application.Telemetry;
 
 /// <summary>
 /// Métricas customizadas para o serviço de ingestão de dados de sensores
 /// </summary>
-public class SensorMetrics
+public class SensorMetrics : ISensorMetrics
 {
     private readonly Meter _meter;
     private readonly Counter<long> _sensorDataReceivedCounter;

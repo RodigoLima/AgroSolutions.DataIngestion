@@ -20,61 +20,61 @@ services:
     networks:
       - sensor-network
 
-  worker:
-    image: agro-solutions-medicoes
-    container_name: medicoes-worker
-    restart: unless-stopped
+  # worker:
+  #   image: agro-solutions-medicoes
+  #   container_name: medicoes-worker
+  #   restart: unless-stopped
 
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
-      ConnectionStrings__DefaultConnection: >
-        Host=${DB_HOST};
-        Port=${DB_PORT};
-        Database=${DB_NAME};
-        Username=${DB_USER};
-        Password=${DB_PASSWORD}
+  #   environment:
+  #     ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+  #     ConnectionStrings__DefaultConnection: >
+  #       Host=${DB_HOST};
+  #       Port=${DB_PORT};
+  #       Database=${DB_NAME};
+  #       Username=${DB_USER};
+  #       Password=${DB_PASSWORD}
 
-      RabbitMq__Host: ${RABBITMQ_HOST}
-      RabbitMq__Port: ${RABBITMQ_PORT}
-      RabbitMq__Username: ${RABBITMQ_USER}
-      RabbitMq__Password: ${RABBITMQ_PASSWORD}
+  #     RabbitMq__Host: ${RABBITMQ_HOST}
+  #     RabbitMq__Port: ${RABBITMQ_PORT}
+  #     RabbitMq__Username: ${RABBITMQ_USER}
+  #     RabbitMq__Password: ${RABBITMQ_PASSWORD}
 
-      Email__Host: ${EMAIL_HOST}
-      Email__Port: ${EMAIL_PORT}
-      Email__UseSsl: ${EMAIL_USE_SSL}
-      Email__From: ${EMAIL_FROM}
+  #     Email__Host: ${EMAIL_HOST}
+  #     Email__Port: ${EMAIL_PORT}
+  #     Email__UseSsl: ${EMAIL_USE_SSL}
+  #     Email__From: ${EMAIL_FROM}
 
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
 
-    networks:
-      - sensor-network
+  #   networks:
+  #     - sensor-network
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - sensor-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U {$DB_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #     POSTGRES_DB: ${DB_NAME}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - sensor-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U {$DB_USER}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -173,7 +173,7 @@ services:
 
 volumes:
   rabbitmq-data:
-  postgres-data:
+  # postgres-data:
   tempo-data:
   loki-data:
   prometheus-data:

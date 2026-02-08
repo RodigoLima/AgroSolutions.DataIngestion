@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using AgroSolutions.DataIngestion.Api.Configuration;
+using AgroSolutions.DataIngestion.Application.Interfaces;
 using AgroSolutions.DataIngestion.Application.Telemetry;
 using Microsoft.Extensions.Options;
 
@@ -10,13 +11,13 @@ public class ApiKeyAuthenticationMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ApiKeyAuthenticationMiddleware> _logger;
     private readonly ApiKeySettings _apiKeySettings;
-    private readonly SensorMetrics _metrics;
+    private readonly ISensorMetrics _metrics;
 
     public ApiKeyAuthenticationMiddleware(
         RequestDelegate next,
         ILogger<ApiKeyAuthenticationMiddleware> logger,
         IOptions<ApiKeySettings> apiKeySettings,
-        SensorMetrics metrics)
+        ISensorMetrics metrics)
     {
         _next = next;
         _logger = logger;

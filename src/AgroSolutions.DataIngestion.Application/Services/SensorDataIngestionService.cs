@@ -15,13 +15,13 @@ public class SensorDataIngestionService : ISensorDataIngestionService
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly IValidator<SensorDataRequest> _validator;
     private readonly ILogger<SensorDataIngestionService> _logger;
-    private readonly SensorMetrics _metrics;
+    private readonly ISensorMetrics _metrics;
 
     public SensorDataIngestionService(
         IPublishEndpoint publishEndpoint,
         IValidator<SensorDataRequest> validator,
         ILogger<SensorDataIngestionService> logger,
-        SensorMetrics metrics)
+        ISensorMetrics metrics)
     {
         _publishEndpoint = publishEndpoint;
         _validator = validator;

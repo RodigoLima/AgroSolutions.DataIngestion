@@ -1,0 +1,54 @@
+# Build artifacts
+bin/
+obj/
+
+# Test projects
+tests/
+
+# IDE / Editor
+.vscode/
+.vs/
+.idea/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Docker files
+docker-compose.yml
+docker-compose.*.yml
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+
+# NuGet
+.nuget/
+packages/
+
+# Docs
+README.md
+docs/
+
+# Kubernetes
+k8s/
+
+# Observability
+grafana/
+
+# Deploy
+scripts/
+
+# Configs
+loki-config.yml
+otel-collector-config.yaml
+prometheus.yml
+tempo-config.yaml

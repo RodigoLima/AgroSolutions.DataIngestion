@@ -45,7 +45,7 @@ builder.Services.AddOpenTelemetryConfiguration();
 // ========================================
 // Registrar Métricas Customizadas
 // ========================================
-builder.Services.AddSingleton<SensorMetrics>();
+builder.Services.AddSingleton<ISensorMetrics, SensorMetrics>();
 
 // ========================================
 // Configurar Serviços
@@ -216,7 +216,7 @@ app.MapPost("/api/sensordata", async (
     [FromServices] ISensorDataIngestionService ingestionService,
     [FromServices] IValidator<SensorDataRequest> validator,
     [FromServices] ILogger<Program> logger,
-    [FromServices] SensorMetrics metrics,
+    [FromServices] ISensorMetrics metrics,
     CancellationToken cancellationToken) =>
 {
     metrics.IncrementActiveRequests();
@@ -279,7 +279,7 @@ app.MapPost("/api/sensordata/batch", async (
     [FromBody] List<SensorDataRequest> requests,
     [FromServices] ISensorDataIngestionService ingestionService,
     [FromServices] ILogger<Program> logger,
-    [FromServices] SensorMetrics metrics,
+    [FromServices] ISensorMetrics metrics,
     CancellationToken cancellationToken) =>
 {
     metrics.IncrementActiveRequests();
