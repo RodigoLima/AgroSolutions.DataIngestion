@@ -10,9 +10,15 @@ IDENTITY="$PROJECTS_ROOT/IdentityService"
 PROPERTY="$PROJECTS_ROOT/PropertyService"
 MEDICOES="$PROJECTS_ROOT/AgroSolutions.Medicoes"
 
+case "${1:-}" in
+  --no-build) export SKIP_BUILD=1; export WAIT_TIMEOUT=15; shift ;;
+esac
+
 echo "================================================"
 echo "  Deploy Master - Todos os microserviços (Kind)"
 echo "================================================"
+[ -n "${SKIP_BUILD:-}" ] && echo "  (modo --no-build: só K8s, sem build; waits curtos)"
+echo ""
 
 command -v kind >/dev/null 2>&1 || { echo "Kind não instalado."; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl não instalado."; exit 1; }
@@ -46,7 +52,7 @@ echo ""
 echo "APIs:"
 echo "  DataIngestion:  http://localhost:5000"
 echo "  Identity:       http://localhost:30081"
-echo "  Property:       http://localhost:30080"
+echo "  Property:       http://localhost:30082"
 echo "  Medicoes:       namespace agro-medicoes (worker)"
 echo ""
 echo "Infra:"

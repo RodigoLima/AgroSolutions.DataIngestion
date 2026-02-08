@@ -70,27 +70,21 @@ fi
 
 echo ""
 
-# 3. Build da imagem Docker
-print_info "Building imagem Docker..."
-cd ..
-docker build -t sensor-ingestion-api:latest "$ROOT_DIR"
-
-print_info "Carregando imagem no Kind..."
-kind load docker-image sensor-ingestion-api:latest --name agro-dev
-
-echo ""
+if [ -z "${SKIP_BUILD:-}" ]; then
+  print_info "Building imagem Docker..."
+  docker build -t sensor-ingestion-api:latest "$ROOT_DIR"
+  print_info "Carregando imagem no Kind..."
+  kind load docker-image sensor-ingestion-api:latest --name agro-dev
+  echo ""
+fi
 
 # 4. Deploy dos manifestos Kubernetes
 print_info "Aplicando manifestos Kubernetes..."
 cd "$ROOT_DIR/k8s"
 
 kubectl apply -f "$ROOT_DIR"/k8s/namespaces.yaml
-sleep 2
-
 kubectl apply -f "$ROOT_DIR"/k8s/app/configmap.yaml
 kubectl apply -f "$ROOT_DIR"/k8s/secrets.yaml
-sleep 2
-
 print_info "Deployando infraestrutura..."
 kubectl apply -f "$ROOT_DIR"/k8s/infra/rabbitmq
 kubectl apply -f "$ROOT_DIR"/k8s/infra/tempo
@@ -98,21 +92,18 @@ kubectl apply -f "$ROOT_DIR"/k8s/infra/loki
 kubectl apply -f "$ROOT_DIR"/k8s/infra/prometheus
 kubectl apply -f "$ROOT_DIR"/k8s/infra/collector
 kubectl apply -f "$ROOT_DIR"/k8s/infra/grafana
-
-print_info "Aguardando infraestrutura ficar pronta (60s)..."
-sleep 60
-
+WAIT_TO="${WAIT_TIMEOUT:-45}"
+if kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout=0s 2>/dev/null; then print_info "RabbitMQ já pronto."; else print_info "Aguardando RabbitMQ..."; kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || sleep 10; fi
 print_info "Deployando aplicação..."
 kubectl apply -f "$ROOT_DIR"/k8s/app
 
 echo ""
 
-# 5. Aguardar pods ficarem prontos
-print_info "Aguardando todos os pods ficarem prontos..."
-kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout=120s
-kubectl wait --for=condition=ready pod -l app=prometheus -n sensor-ingestion --timeout=120s
-kubectl wait --for=condition=ready pod -l app=grafana -n sensor-ingestion --timeout=120s
-kubectl wait --for=condition=ready pod -l app=sensor-api -n sensor-ingestion --timeout=120s
+# 5. Aguardar pods (pula se já prontos)
+print_info "Verificando pods..."
+for app in prometheus grafana sensor-api; do
+  if kubectl wait --for=condition=ready pod -l app=$app -n sensor-ingestion --timeout=0s 2>/dev/null; then :; else kubectl wait --for=condition=ready pod -l app=$app -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || true; fi
+done
 
 echo ""
 
