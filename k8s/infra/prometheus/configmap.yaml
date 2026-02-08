@@ -14,15 +14,32 @@ data:
         static_configs:
           - targets: ['localhost:9090']
 
+      - job_name: api-data-ingestion
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ['sensor-ingestion']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: sensor-api
+          - source_labels: [__meta_kubernetes_pod_ip]
+            action: replace
+            target_label: __address__
+            replacement: $1:8080
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+        metrics_path: /metrics
+        scrape_interval: 10s
+
       - job_name: otel-collector
         honor_labels: true
         static_configs:
           - targets: ['otel-collector-service:8888']
-
-      - job_name: api-data-ingestion
-        honor_labels: true
-        static_configs:
-          - targets: ['otel-collector-service:8889']
 
       - job_name: tempo
         static_configs:

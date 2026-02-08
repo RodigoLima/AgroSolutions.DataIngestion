@@ -1,6 +1,7 @@
 using FluentValidation;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
+using Prometheus;
 using Serilog;
 using AgroSolutions.DataIngestion.Application.DTOs;
 using AgroSolutions.DataIngestion.Application.Interfaces;
@@ -172,7 +173,9 @@ app.UseSerilogRequestLogging(options =>
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
-// Middleware de autenticação
+app.UseMetricServer();
+app.UseHttpMetrics();
+
 app.UseApiKeyAuthentication();
 
 // ========================================
