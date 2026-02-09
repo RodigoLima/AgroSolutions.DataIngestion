@@ -17,39 +17,37 @@ esac
 echo "================================================"
 echo "  Deploy Master - Todos os microserviços (Kind)"
 echo "================================================"
-echo "  Cluster único: agro-dev (todos os serviços no mesmo cluster)"
-[ -n "${SKIP_BUILD:-}" ] && echo "  (modo --no-build: só K8s, sem build; waits curtos)"
+echo "  Cluster: agro-dev"
+[ -n "${SKIP_BUILD:-}" ] && echo "  Modo: --no-build (sem build de imagens)"
 echo ""
 
 command -v kind >/dev/null 2>&1 || { echo "Kind não instalado."; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl não instalado."; exit 1; }
 command -v docker >/dev/null 2>&1 || { echo "Docker não instalado."; exit 1; }
 
-if ! kind get clusters 2>/dev/null | grep -q "^agro-dev$"; then
-  echo "Cluster agro-dev ainda não existe; será criado no 1º deploy."
-elif [ "$(kubectl config current-context 2>/dev/null)" != "kind-agro-dev" ]; then
-  kubectl config use-context kind-agro-dev 2>/dev/null || true
+for d in "$DATA_INGESTION" "$IDENTITY" "$PROPERTY" "$MEDICOES"; do
+  [ -d "$d" ] || { echo "Diretório não encontrado: $d"; exit 1; }
+done
+
+if kind get clusters 2>/dev/null | grep -q "^agro-dev$"; then
+  [ "$(kubectl config current-context 2>/dev/null)" != "kind-agro-dev" ] && kubectl config use-context kind-agro-dev 2>/dev/null || true
+else
+  echo "Cluster agro-dev não existe; será criado no 1º deploy."
 fi
 
 run() {
-  local dir="$1"
-  local script="$2"
-  local name="$3"
+  local dir="$1" script="$2" name="$3"
   echo ""
   echo ">>> $name"
   echo "----------------------------------------"
-  if [ -f "$dir/$script" ]; then
-    (cd "$dir" && bash "$script")
-  else
-    echo "Script não encontrado: $dir/$script"
-    exit 1
-  fi
+  [ -f "$dir/$script" ] || { echo "Script não encontrado: $dir/$script"; exit 1; }
+  (cd "$dir" && bash "$script")
 }
 
-run "$DATA_INGESTION" "scripts/deploy.sh" "1/4 AgroSolutions.DataIngestion (infra + RabbitMQ)"
+run "$DATA_INGESTION" "scripts/deploy.sh" "1/4 DataIngestion (infra + RabbitMQ)"
 run "$IDENTITY" "scripts/deploy.sh" "2/4 IdentityService"
 run "$PROPERTY" "scripts/deploy.sh" "3/4 PropertyService"
-run "$MEDICOES" "scripts/deploy.sh" "4/4 AgroSolutions.Medicoes"
+run "$MEDICOES" "scripts/deploy.sh" "4/4 Medicoes"
 
 echo ""
 echo "================================================"
@@ -64,15 +62,9 @@ echo "  Medicoes:       namespace agro-medicoes (worker)"
 echo ""
 echo "Infra:"
 echo "  RabbitMQ:       http://localhost:15672 (admin/admin123)"
-echo "  Grafana:"
-echo "    DataIngestion:  http://localhost:30300 (admin/admin)"
-echo "    Identity:       http://localhost:30381 (admin/admin)"
-echo "    Property:       http://localhost:30380 (admin/admin)"
-echo "    Medicoes:       http://localhost:30000 (admin/admin)"
-echo "  Prometheus:"
-echo "    DataIngestion:  http://localhost:30900"
-echo "    Medicoes:       http://localhost:30902"
-echo "    Property:       http://localhost:30980"
-echo "    Identity:       http://localhost:30981"
-echo "  Mailpit (Medicoes):  http://localhost:30025 (UI)  |  SMTP: localhost:31025"
+echo "  Grafana:        DataIngestion 30300 | Identity 30381 | Property 30380 | Medicoes 30000 (admin/admin)"
+echo "  Prometheus:     DataIngestion 30900 | Identity 30981 | Property 30980 | Medicoes 30902"
+echo "  Mailpit:        http://localhost:30025 (UI)  |  SMTP: localhost:31025"
+echo ""
+echo "No Windows, se Prometheus/Grafana não abrirem: kubectl port-forward -n <namespace> svc/<service> <porta-local>:<porta-svc>"
 echo ""
