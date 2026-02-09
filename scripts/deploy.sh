@@ -132,7 +132,14 @@ echo "  RabbitMQ:       http://localhost:15672 (admin/admin123)"
 echo "  Grafana:        http://localhost:30300 (admin/admin)"
 echo "  Prometheus:     http://localhost:30900  (UI do Prometheus)"
 echo ""
-echo "No Windows, se Prometheus/Grafana não abrirem (NodePort pode falhar), use em outro terminal:"
-echo "  kubectl port-forward -n sensor-ingestion svc/prometheus-service 30900:9090"
-echo "  kubectl port-forward -n sensor-ingestion svc/grafana-service 30300:3000"
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+  (nohup kubectl port-forward -n sensor-ingestion svc/prometheus-service 30900:9090 &>/dev/null &)
+  (nohup kubectl port-forward -n sensor-ingestion svc/grafana-service 30300:3000 &>/dev/null &)
+  sleep 1
+  print_info "Port-forward iniciado em background (Prometheus 30900, Grafana 30300). Acesse pelo browser."
+else
+  echo "No Windows, se Prometheus/Grafana não abrirem, execute em outro terminal:"
+  echo "  kubectl port-forward -n sensor-ingestion svc/prometheus-service 30900:9090"
+  echo "  kubectl port-forward -n sensor-ingestion svc/grafana-service 30300:3000"
+fi
 echo ""
