@@ -57,9 +57,10 @@ print_info "Verificando cluster Kind..."
 
 if kind get clusters | grep -q "agro-dev"; then
     print_info "Cluster 'agro-dev' já existe."
+    [ "$(kubectl config current-context 2>/dev/null)" != "kind-agro-dev" ] && kubectl config use-context kind-agro-dev 2>/dev/null || true
 else
     print_info "Criando cluster Kind agro-dev..."
-    kind create cluster --config "$ROOT_DIR"/k8s/kind/config.yaml
+    kind create cluster --name agro-dev --config "$ROOT_DIR/k8s/kind/config.yaml"
 fi
 
 CURRENT_CONTEXT="$(kubectl config current-context)"
@@ -99,10 +100,13 @@ kubectl apply -f "$ROOT_DIR"/k8s/app
 
 echo ""
 
-# 5. Aguardar pods (pula se já prontos)
-print_info "Verificando pods..."
-for app in prometheus grafana sensor-api; do
-  if kubectl wait --for=condition=ready pod -l app=$app -n sensor-ingestion --timeout=0s 2>/dev/null; then :; else kubectl wait --for=condition=ready pod -l app=$app -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || true; fi
+# 5. Aguardar pods
+print_info "Aguardando RabbitMQ..."
+kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || true
+print_info "Aguardando sensor-api (API)..."
+kubectl wait --for=condition=ready pod -l app=sensor-api -n sensor-ingestion --timeout="${WAIT_TO}s" || { print_error "API não ficou pronta. Verifique: kubectl get pods -n sensor-ingestion"; exit 1; }
+for app in prometheus grafana; do
+  kubectl wait --for=condition=ready pod -l app=$app -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || true
 done
 
 echo ""
@@ -126,5 +130,7 @@ echo ""
 echo "Infra:"
 echo "  RabbitMQ:       http://localhost:15672 (admin/admin123)"
 echo "  Grafana:        http://localhost:30300 (admin/admin)"
-echo "  Prometheus:     http://localhost:30900"
+echo "  Prometheus:     http://localhost:30900  (UI do Prometheus)"
+echo ""
+echo "Se Prometheus não abrir: kubectl get pods -n sensor-ingestion (pod prometheus deve estar Running)"
 echo ""
