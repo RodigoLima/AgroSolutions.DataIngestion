@@ -57,15 +57,26 @@ print_info "Verificando cluster Kind..."
 
 if kind get clusters | grep -q "agro-dev"; then
     print_info "Cluster 'agro-dev' já existe."
-    [ "$(kubectl config current-context 2>/dev/null)" != "kind-agro-dev" ] && kubectl config use-context kind-agro-dev 2>/dev/null || true
+    kubectl config use-context kind-agro-dev 2>/dev/null || true
 else
     print_info "Criando cluster Kind agro-dev..."
     kind create cluster --name agro-dev --config "$ROOT_DIR/k8s/kind/config.yaml"
 fi
 
-CURRENT_CONTEXT="$(kubectl config current-context)"
-if [[ "$CURRENT_CONTEXT" != kind-* ]]; then
-  print_error "Contexto atual ($CURRENT_CONTEXT) não é um cluster Kind"
+CURRENT_CONTEXT="$(kubectl config current-context 2>/dev/null || echo '')"
+if [[ -z "$CURRENT_CONTEXT" || "$CURRENT_CONTEXT" != kind-* ]]; then
+  kubectl config use-context kind-agro-dev 2>/dev/null || true
+  CURRENT_CONTEXT="$(kubectl config current-context 2>/dev/null || echo '')"
+fi
+if [[ -z "$CURRENT_CONTEXT" || "$CURRENT_CONTEXT" != kind-* ]]; then
+  print_info "Recarregando kubeconfig do cluster agro-dev..."
+  KIND_KUBECONFIG="${TMPDIR:-/tmp}/kind-agro-dev-kubeconfig"
+  kind get kubeconfig --name agro-dev > "$KIND_KUBECONFIG" 2>/dev/null && export KUBECONFIG="$KIND_KUBECONFIG"
+  kubectl config use-context kind-agro-dev 2>/dev/null || true
+  CURRENT_CONTEXT="$(kubectl config current-context 2>/dev/null || echo '')"
+fi
+if [[ -z "$CURRENT_CONTEXT" || "$CURRENT_CONTEXT" != kind-* ]]; then
+  print_error "Contexto Kind não disponível. Execute: kubectl config use-context kind-agro-dev"
   exit 1
 fi
 
@@ -93,7 +104,7 @@ kubectl apply -f "$ROOT_DIR"/k8s/infra/loki
 kubectl apply -f "$ROOT_DIR"/k8s/infra/prometheus
 kubectl apply -f "$ROOT_DIR"/k8s/infra/collector
 kubectl apply -f "$ROOT_DIR"/k8s/infra/grafana
-WAIT_TO="${WAIT_TIMEOUT:-90}"
+WAIT_TO="${WAIT_TIMEOUT:-150}"
 if kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout=0s 2>/dev/null; then print_info "RabbitMQ já pronto."; else print_info "Aguardando RabbitMQ..."; kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || sleep 10; fi
 print_info "Deployando aplicação..."
 kubectl apply -f "$ROOT_DIR"/k8s/app
