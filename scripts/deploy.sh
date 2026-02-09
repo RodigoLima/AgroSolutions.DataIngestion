@@ -104,7 +104,7 @@ echo ""
 print_info "Aguardando RabbitMQ..."
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || true
 print_info "Aguardando sensor-api (API)..."
-kubectl wait --for=condition=ready pod -l app=sensor-api -n sensor-ingestion --timeout="${WAIT_TO}s" || { print_error "API não ficou pronta. Verifique: kubectl get pods -n sensor-ingestion"; exit 1; }
+kubectl wait --for=condition=ready pod -l app=sensor-api -n sensor-ingestion --timeout="${WAIT_TO}s" || { print_error "API não ficou pronta."; echo "  kubectl get pods -n sensor-ingestion"; echo "  kubectl describe pod -n sensor-ingestion -l app=sensor-api"; echo "  kubectl logs -n sensor-ingestion deployment/sensor-api"; exit 1; }
 for app in prometheus grafana; do
   kubectl wait --for=condition=ready pod -l app=$app -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || true
 done
