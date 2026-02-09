@@ -93,7 +93,7 @@ kubectl apply -f "$ROOT_DIR"/k8s/infra/loki
 kubectl apply -f "$ROOT_DIR"/k8s/infra/prometheus
 kubectl apply -f "$ROOT_DIR"/k8s/infra/collector
 kubectl apply -f "$ROOT_DIR"/k8s/infra/grafana
-WAIT_TO="${WAIT_TIMEOUT:-45}"
+WAIT_TO="${WAIT_TIMEOUT:-90}"
 if kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout=0s 2>/dev/null; then print_info "RabbitMQ já pronto."; else print_info "Aguardando RabbitMQ..."; kubectl wait --for=condition=ready pod -l app=rabbitmq -n sensor-ingestion --timeout="${WAIT_TO}s" 2>/dev/null || sleep 10; fi
 print_info "Deployando aplicação..."
 kubectl apply -f "$ROOT_DIR"/k8s/app
