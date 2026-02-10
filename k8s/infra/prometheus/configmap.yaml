@@ -3,22 +3,28 @@ kind: ConfigMap
 metadata:
   name: prometheus-config
   namespace: sensor-ingestion
+  labels:
+    app: prometheus
 data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
+      external_labels:
+        cluster: 'sensor-ingestion-cluster'
+        environment: 'production'
 
     scrape_configs:
       - job_name: prometheus
         static_configs:
           - targets: ['localhost:9090']
 
-      - job_name: api-data-ingestion
+      - job_name: 'api-data-ingestion'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
-              names: ['sensor-ingestion']
+              names:
+                - sensor-ingestion
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -30,11 +36,15 @@ data:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
-          - source_labels: [__meta_kubernetes_namespace]
+          - source_labels: [__meta_kubernetes_pod_namespace]
             action: replace
             target_label: namespace
-        metrics_path: /metrics
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            action: replace
+            target_label: node
+        metrics_path: '/metrics'
         scrape_interval: 10s
+        scrape_timeout: 5s
 
       - job_name: otel-collector
         honor_labels: true
