@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ["*"]
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+          cache: false
+
+      - name: Restore
+        run: dotnet restore AgroSolutions.DataIngestion.sln
+
+      - name: Build
+        run: dotnet build AgroSolutions.DataIngestion.sln --no-restore --configuration Release
+
+      - name: Run Tests
+        run: dotnet test AgroSolutions.DataIngestion.sln --configuration Release --no-build --verbosity minimal
