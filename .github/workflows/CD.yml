@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKERHUB_REPOSITORY: ferreirarodrigo230392/dataingestion-api
+  DOCKERHUB_REPOSITORY: rm364831/dataingestion-api
 
 jobs:
   deploy:
